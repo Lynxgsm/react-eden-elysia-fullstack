@@ -1,30 +1,43 @@
-import type { UserService } from "@services/users/services";
-import { treaty } from "@elysiajs/eden";
-import { useEffect, useState } from "react";
+import type { App } from '@services/app';
+import { treaty } from '@elysiajs/eden';
+import { useEffect, useState } from 'react';
+import { SERVICE_APP_PORT } from '@services/environments';
 
-const userService = treaty<UserService>("http://localhost:4001");
+const appService = treaty<App>(`http://localhost:${SERVICE_APP_PORT}`);
 
 export default function App() {
-  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<
+    {
+      name: string;
+      id: number;
+      age: number;
+    }[]
+  >([]);
+  const getUsers = async () => {
+    const { data } = await appService.users.get();
+    if (data) {
+      setUsers(data);
+    }
+    setLoading(false);
+  };
   useEffect(() => {
-    const fetch = async () => {
-      const { data, status } = await userService.users.get();
-      console.log(data, status);
-      setUsers(data as any);
-    };
-
-    fetch();
+    getUsers();
   }, []);
 
-  if (users) {
-    return (
-      <ul>
-        {users.map((user) => (
-          <li key={user.id}>Hi {user.firstname}</li>
-        ))}
-      </ul>
-    );
+  if (loading) {
+    return <p>Loading...</p>;
   }
 
-  return <p>Loading...</p>;
+  return (
+    <div>
+      <ul>
+        {users.map((user) => (
+          <li key={user.id}>
+            {user.name} - {user.age}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
 }
